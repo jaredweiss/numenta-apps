@@ -1,0 +1,19 @@
+apiVersion: v1beta3
+kind: Pod
+metadata:
+  name: master
+  labels: 
+    name: master
+    app: parallel-example
+spec: 
+  containers: 
+    - name: master
+      image: <registry>/parallel-master-example
+      env:
+        - name: RABBITMQ_HOST
+          value: $(RABBIT_PARALLEL_SERVICE_HOST)
+        - name: RABBITMQ_USER
+          value: guest
+        - name: RABBITMQ_PASSWD
+          value: guest
+  restartPolicy: Never

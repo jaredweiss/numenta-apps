@@ -1,0 +1,27 @@
+apiVersion: v1beta3
+kind: ReplicationController
+metadata:
+  name: worker-replicator
+  labels: 
+    name: worker-replicator
+    app: parallel-example
+spec:
+  replicas: 2
+  selector:
+    name: worker
+  template:
+    metadata:
+      labels:
+        name: worker
+        app: parallel-example
+    spec:
+      containers:
+        - name: worker
+          image: <registry>/parallel-worker-example
+          env:
+            - name: RABBITMQ_HOST
+              value: $(RABBIT_PARALLEL_SERVICE_HOST)
+            - name: RABBITMQ_USER
+              value: guest
+            - name: RABBITMQ_PASSWD
+              value: guest

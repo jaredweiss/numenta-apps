@@ -1,0 +1,11 @@
+{
+    "commands": [
+        "py.test ./tests/unit/config_test.py",
+        "py.test ./tests/unit/date_time_utils_test.py",
+        "py.test ./tests/unit/error_handling_test.py",
+        "py.test ./tests/unit/file_lock_test.py",
+        "py.test ./tests/unit/logging_support_test.py",
+        "py.test ./tests/unit/sqlalchemy_retry_on_transient_error_test.py",
+        "py.test ./tests/unit/threading_utils_test.py"
+    ]
+}

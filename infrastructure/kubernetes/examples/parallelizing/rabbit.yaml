@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: List                                                                                 
+items:
+  # Pods
+  - kind: Pod
+    metadata:
+      name: rabbit
+      labels: 
+        name: rabbit-parallel
+        app: parallel-example
+    spec: 
+      containers: 
+        - name: rabbit
+          image: rabbitmq:3-management
+          env:
+            - name: RABBITMQ_NODENAME
+              value: rabbit
+          ports:
+            - containerPort: 5672
+          volumeMounts:
+            - name: rabbitmq-persistent-storage
+              mountPath: /var/lib/rabbitmq
+      volumes:
+        - name: rabbitmq-persistent-storage
+          emptyDir: {}
+      restartPolicy: Always
+  # Services
+  - kind: Service
+    metadata: 
+      labels: 
+        name: rabbit-parallel
+        app: parallel-example
+      name: rabbit-parallel
+    spec: 
+      ports:
+        - port: 5672
+      selector: 
+        name: rabbit-parallel-message-bus
