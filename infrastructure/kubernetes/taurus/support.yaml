@@ -1,0 +1,125 @@
+apiVersion: v1
+kind: List                                                                                 
+items:
+  # Pods
+  - kind: Pod
+    metadata:
+      name: dynamodb
+      labels: 
+        name: dynamodb
+        app: taurus-server
+    spec: 
+      containers: 
+        - name: dynamodb
+          image: <registry>/taurus-dynamodb
+          env:
+            - name: DYNAMODB_PORT
+              value: "8300"
+          ports:
+            - containerPort: 8300
+      restartPolicy: Always
+  - kind: Pod
+    metadata:
+      name: taurus-mysql
+      labels: 
+        name: taurus-mysql
+        app: taurus-server
+    spec: 
+      containers: 
+        - name: mysql
+          image: mysql:5.6
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: taurus
+          ports: 
+            - containerPort: 3306
+              name: mysql
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-persistent-storage
+          emptyDir: {}
+      restartPolicy: Always
+  - kind: Pod
+    metadata:
+      name: taurus-rabbit
+      labels: 
+        name: taurus-rabbit
+        app: taurus-server
+    spec:
+      containers: 
+        - name: rabbit
+          image: rabbitmq:3-management
+          env:
+            - name: RABBITMQ_NODENAME
+              value: rabbit
+          ports:
+            - containerPort: 5672
+              name: rabbit
+            - containerPort: 15672
+              name: rabbit-api
+          volumeMounts:
+            - name: rabbitmq-persistent-storage
+              mountPath: /var/lib/rabbitmq
+      volumes:
+        - name: rabbitmq-persistent-storage
+          emptyDir: {}
+      restartPolicy: Always
+  # Services
+  - kind: Service
+    metadata: 
+      labels: 
+        name: dynamodb
+        app: taurus-server
+      name: dynamodb
+    spec: 
+      ports:
+        - port: 8300
+      selector: 
+        name: dynamodb
+  - kind: Service
+    metadata: 
+      labels: 
+        name: rabbit-service
+        app: taurus-server
+      name: rabbit
+    spec: 
+      ports:
+        - port: 5672
+      selector: 
+        name: taurus-rabbit
+#   Uncomment the following lines to enable outside access
+#   to rabbitmq api (over port 15672)
+#
+#  - kind: Service
+#    metadata: 
+#      labels:
+#        name: rabbit-api-service
+#        app: taurus-server
+#       name: rabbit-api
+#    spec:
+#      ports: 
+#        - port: 15672
+#      selector: 
+#        name: taurus-rabbit
+  - kind: Service
+    metadata: 
+      labels: 
+        name: mysql-service
+        app: taurus-server
+      name: mysql
+      # The name: mysql will be used to set env vars on
+      # pods spun up after this service is started
+      # 
+      # MYSQL_SERVICE_HOST = <ip>
+      # MYSQL_SERVICE_PORT = <port>
+      # 
+      # See taurus-server.yaml for usage example 
+    spec: 
+      ports:
+        - port: 3306
+      selector: 
+        name: taurus-mysql
+
+

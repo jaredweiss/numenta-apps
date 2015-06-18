@@ -1,0 +1,143 @@
+#cloud-config
+
+---
+write_files:
+- path: /etc/systemd/system/docker.service.d/50-insecure-registry.conf
+  content: |
+    [Service]
+    Environment='DOCKER_OPTS=--insecure-registry="<registry>"'
+coreos:
+  etcd2:
+    advertise-client-urls: http://$public_ipv4:2379
+    initial-advertise-peer-urls: http://$private_ipv4:2380
+    listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+    listen-peer-urls: http://$private_ipv4:2380,http://$private_ipv4:7001
+    discovery: https://discovery.etcd.io/a6415f7b0452feff75496a5a4cbe8e5f
+  fleet:
+    public-ip: $public_ipv4
+  flannel:
+    interface: $public_ipv4
+  units:
+  - name: etcd2.service
+    command: start
+  - name: fleet.service
+    command: start
+  - name: flanneld.service
+    command: start
+    drop-ins:
+    - name: 50-network-config.conf
+      content: |
+        [Unit]
+        Requires=etcd2.service
+        [Service]
+        ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"10.244.0.0/16", "Backend": {"Type": "vxlan"}}'
+  - name: docker-tcp.socket
+    command: start
+    enable: true
+    content: |
+      [Unit]
+      Description=Docker Socket for the API
+      [Socket]
+      ListenStream=2375
+      Service=docker.service
+      BindIPv6Only=both
+      [Install]
+      WantedBy=sockets.target
+  - name: kube-apiserver.service
+    command: start
+    content: |
+      [Unit]
+      Description=Kubernetes API Server
+      Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+      Requires=etcd2.service
+      After=etcd2.service
+      [Service]
+      ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+      ExecStartPre=/usr/bin/wget -N -P /opt/bin https://storage.googleapis.com/kubernetes-release/release/v0.18.2/bin/linux/amd64/kube-apiserver
+      ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-apiserver
+      TimeoutStartSec=10m
+      ExecStart=/opt/bin/kube-apiserver \
+      --allow_privileged=true \
+      --insecure_bind_address=0.0.0.0 \
+      --insecure_port=8080 \
+      --kubelet_https=true \
+      --secure_port=6443 \
+      --service-cluster-ip-range=10.100.0.0/16 \
+      --etcd_servers=http://127.0.0.1:4001 \
+      --public_address_override=127.0.0.1 \
+      --logtostderr=true
+      Restart=always
+      RestartSec=10
+  - name: kube-controller-manager.service
+    command: start
+    content: |
+      [Unit]
+      Description=Kubernetes Controller Manager
+      Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+      Requires=kube-apiserver.service
+      After=kube-apiserver.service
+      [Service]
+      ExecStartPre=/usr/bin/wget -N -P /opt/bin https://storage.googleapis.com/kubernetes-release/release/v0.18.2/bin/linux/amd64/kube-controller-manager
+      ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-controller-manager
+      TimeoutStartSec=10m
+      ExecStart=/opt/bin/kube-controller-manager \
+      --machines=127.0.0.1 \
+      --master=127.0.0.1:8080 \
+      --logtostderr=true
+      Restart=always
+      RestartSec=10
+  - name: kube-scheduler.service
+    command: start
+    content: |
+      [Unit]
+      Description=Kubernetes Scheduler
+      Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+      Requires=kube-apiserver.service
+      After=kube-apiserver.service
+      [Service]
+      ExecStartPre=/usr/bin/wget -N -P /opt/bin https://storage.googleapis.com/kubernetes-release/release/v0.18.2/bin/linux/amd64/kube-scheduler
+      ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-scheduler
+      TimeoutStartSec=10m
+      ExecStart=/opt/bin/kube-scheduler --master=127.0.0.1:8080
+      Restart=always
+      RestartSec=10
+  - name: kube-proxy.service
+    command: start
+    content: |
+      [Unit]
+      Description=Kubernetes Proxy
+      Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+      Requires=etcd2.service
+      After=etcd2.service
+      [Service]
+      ExecStartPre=/usr/bin/wget -N -P /opt/bin https://storage.googleapis.com/kubernetes-release/release/v0.18.2/bin/linux/amd64/kube-proxy
+      ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-proxy
+      TimeoutStartSec=10m
+      ExecStart=/opt/bin/kube-proxy \
+      --master=127.0.0.1:8080 \
+      --logtostderr=true
+      Restart=always
+      RestartSec=10
+  - name: kube-kubelet.service
+    command: start
+    content: |
+      [Unit]
+      Description=Kubernetes Kubelet
+      Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+      Requires=etcd2.service
+      After=etcd2.service
+      [Service]
+      ExecStartPre=/usr/bin/wget -N -P /opt/bin https://storage.googleapis.com/kubernetes-release/release/v0.18.2/bin/linux/amd64/kubelet
+      ExecStartPre=/usr/bin/chmod +x /opt/bin/kubelet
+      TimeoutStartSec=10m
+      ExecStart=/opt/bin/kubelet \
+      --address=0.0.0.0 \
+      --port=10250 \
+      --hostname-override=127.0.0.1 \
+      --api-servers=127.0.0.1:8080 \
+      --allow-privileged=true \
+      --logtostderr=true \
+      --healthz-bind_address=0.0.0.0 \
+      --healthz-port=10248
+      Restart=always
+      RestartSec=10

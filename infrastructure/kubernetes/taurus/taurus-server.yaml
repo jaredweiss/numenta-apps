@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: List
+items: 
+  - kind: Pod
+    metadata:
+      name: taurus
+      labels:
+        name: taurus-server
+        app: taurus-server
+    spec:
+      containers:
+        - name: taurus
+          image: <registry>/taurus
+          env:
+            - name: RABBITMQ_HOST
+              value: $(RABBIT_SERVICE_HOST)
+            - name: RABBITMQ_USER
+              value: guest
+            - name: RABBITMQ_PASSWD
+              value: guest
+            - name: MYSQL_HOST
+              value: $(MYSQL_SERVICE_HOST)
+            - name: MYSQL_USER
+              value: root
+            - name: MYSQL_PASSWD
+              value: taurus
+            - name: DYNAMODB_HOST
+              value: $(DYNAMODB_SERVICE_HOST)
+            - name: DYNAMODB_PORT
+              value: $(DYNAMODB_SERVICE_PORT)
+          # Uncomment the following lines (and the services
+          # comments) to expose the taurus server's ports
+          # to an external IP
+          #
+          # ports:
+          #   - containerPort: 443
+          #     name: ssh
+          #   - containerPort: 9001
+          #     name: supervisor
+          privileged: true
+      restartPolicy: Always
+  # Uncomment the following lines to expose the taurus server's
+  # ports to an external IP
+  # 
+  # - kind: Service
+  #   metadata: 
+  #     labels: 
+  #       name: taurus-server-service
+  #       app: taurus-server
+  #     name: taurus-server-service
+  #   spec: 
+  #     ports:
+  #       - port: 443
+  #         name: ssh
+  #       - port: 9001
+  #         name: supervisor
+  #     selector:
+  #       # Must EXACTLY match one of the labels on the destination pod
+  #       name: taurus-server
