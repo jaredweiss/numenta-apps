@@ -3,5 +3,6 @@ mysql-python==1.2.5
 mock
 -e https://github.com/vitaly-krugl/haigha/tarball/temp-numenta#egg=haigha-0.7.4rc100
 pytz==2015.2
+requests==2.0.1
 sqlalchemy==0.9.4
 unittest2==0.5.1
