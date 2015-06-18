@@ -47,6 +47,12 @@ Kubernetes + a Docker Registry
 ------------------------------
 Kuberenetes treats images a bit differently than docker does [*see here...*](https://github.com/GoogleCloudPlatform/kubernetes/blob/master/docs/images.md). Basically, Kubernetes doesn't pull images built using the local docker image cache. Instead, it gets images from docker registries (note: this DOES include the localhost:5000 registry if you want to build/push to a registry running on the same node as Kubernetes). For the sake of simplicity, here we describe using a private docker registry denoted throughout this readme as ```<registry>```. Simply replace this with any private or public registry. Just be certain the registry DOESN'T require any authentication and the ```--insecure-registry``` option is set when launching the docker daemon. 
 
+Before running any of these examples, you'll need to replace ```<registry>``` with
+an actual url. Here's a list of files to update:
+- taurus/support.yaml (line 14)
+- taurus/taurus-server.yaml (line 13)
+- user-data (line 8)
+
 We use the DOCKER_OPTS envvar to tell the docker daemon our server is insecure. This is set in our [user-data](user-data) file with the following lines: 
 '''
 write_files:
@@ -101,7 +107,8 @@ Running Taurus on Kubernetes
 
 Get ```kubectl```:
 [Download](https://storage.googleapis.com/kubernetes-release/release/v0.17.0/bin/darwin/amd64/kubectl)
-[Documentation](https://github.com/GoogleCloudPlatform/kubernetes/blob/master/docs/kubectl.md)
+
+[(documentation)](https://github.com/GoogleCloudPlatform/kubernetes/blob/master/docs/kubectl.md)
 ```
 chmod +x ~/Downloads/kubectl
 mv ~/Downloads/kubectl /usr/local/bin
